@@ -1,0 +1,70 @@
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier, IsolationForest
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+# Load the data from DarkNet.csv
+data = pd.read_csv('DarkNet.csv')
+
+# Preprocess the data
+# # Remove missing values
+data = data.dropna()
+
+# # Convert categorical variables if necessary
+# Example: data['Protocol'] = data['Protocol'].astype('category').cat.codes
+
+# Exploratory Data Analysis (EDA)
+# # Visualize data distribution
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.histplot(data['Flow_Duration'])
+plt.show()
+
+# Feature Selection
+# # Select relevant features for model training
+features = ['Flow_Duration', 'Total_Fwd_Packet', 'Total_Bwd_packets', 'Flow_Bytes/s', 'Flow_Packets/s']
+X = data[features]
+y = data['Label-1']  # Assuming 'Label-1' is the target variable
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Model Training
+# # Train a Random Forest classifier
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf.fit(X_train, y_train)
+
+# Model Evaluation
+# # Predict on the test set
+y_pred = clf.predict(X_test)
+
+# # Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, pos_label='Tor')
+recall = recall_score(y_test, y_pred, pos_label='Tor')
+f1 = f1_score(y_test, y_pred, pos_label='Tor')
+
+print(f'Accuracy: {accuracy}')
+print(f'Precision: {precision}')
+print(f'Recall: {recall}')
+print(f'F1 Score: {f1}')
+
+# Anomaly Detection
+# # Train an Isolation Forest for anomaly detection
+iso_forest = IsolationForest(contamination=0.01, random_state=42)
+data['anomaly'] = iso_forest.fit_predict(X)
+
+# # Filter anomalies
+anomalies = data[data['anomaly'] == -1]
+
+# Save anomalies to a CSV file
+anomalies.to_csv('anomalies_detected.csv', index=False)
+
+# Notify administrators (example function)
+def notify_admins(anomalies):
+    # Code to send notifications (e.g., email, SMS)
+    pass
+
+notify_admins(anomalies)
+
